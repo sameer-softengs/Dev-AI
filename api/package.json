@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@openrouter/sdk": "^0.12.21",
+    "axios": "^1.15.2",
+    "cors": "^2.8.6",
+    "docx": "^9.6.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jspdf": "^4.2.1"
+  }
+}

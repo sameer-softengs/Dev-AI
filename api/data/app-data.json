@@ -1,0 +1,12 @@
+{
+  "users": [
+    {
+      "id": "7b4a2205-5329-46e0-b2e5-ef17ca537b36",
+      "name": "Muhammad Sameer",
+      "email": "muhammadsameer4536@gmail.com",
+      "passwordHash": "4a8b7c03f646589e7d9ca692ca848e36:4a04b0488d912788779f77c9560090a20f359c531aa71fd986089977171a152f8f483c63c837f83a46a7a67aaa13b8486e03f454263f812ee591dec71264c313",
+      "createdAt": "2026-04-26T16:38:56.906Z"
+    }
+  ],
+  "history": []
+}

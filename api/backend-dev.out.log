@@ -1,0 +1,13 @@
+Loading .env from: D:\docs\Projects\AI service\backend\.env
+◇ injected env (3) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+-----------------------------------------
+System Check:
+API Key Status: EXISTS ✅
+Key Prefix: sk-or-v1-e...
+-----------------------------------------
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+-----------------------------------------
+✅ Server is live on: http://localhost:5000
+✅ Environment: Development
+✅ Default Currency: PKR
+-----------------------------------------
