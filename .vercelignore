@@ -1,0 +1,5 @@
+api/src/controllers/*
+api/src/routes/*
+api/src/services/*
+api/src/middleware/*
+api/src/utils/*
