@@ -2,7 +2,7 @@ const { generatePDF, generateDOCX } = require('../services/filegenerator');
 const { normalizeImageSource, exportImageAsPdf } = require('../services/imageexportservice');
 
 const handleFileExport = async (req, res) => {
-    const { format, title, content, type } = req.body; // format: 'pdf'|'doc', type: 'SRS'|'Proposal'
+    const { format, title, content, type } = req.body;
     const safeTitle = String(title || 'generated-document');
     const safeType = String(type || 'General');
 
@@ -11,9 +11,11 @@ const handleFileExport = async (req, res) => {
     try {
         let buffer;
         let contentType;
-        let fileName = `${safeTitle.replace(/\s+/g, '_')}_${safeType}.${format === 'pdf' ? 'pdf' : 'docx'}`;
+        const isPdf = format === 'pdf';
+        const extension = isPdf ? 'pdf' : 'docx';
+        let fileName = `${safeTitle.replace(/\s+/g, '_')}_${safeType}.${extension}`;
 
-        if (format === 'pdf') {
+        if (isPdf) {
             buffer = await generatePDF(safeTitle, content, safeType);
             contentType = 'application/pdf';
         } else {
@@ -25,6 +27,7 @@ const handleFileExport = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         res.send(buffer);
     } catch (error) {
+        console.error('File export error:', error);
         res.status(500).json({ error: "Generation failed." });
     }
 };

@@ -23,12 +23,17 @@
 @keyframes riseIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 body {
@@ -699,6 +704,7 @@ body {
   width: min(900px, 100%);
   margin: 0 auto;
   scrollbar-width: none;
+  scroll-behavior: smooth;
 }
 
 .conversation-thread::-webkit-scrollbar {
@@ -711,7 +717,11 @@ body {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  animation: riseIn 220ms ease both;
+  animation: riseIn 300ms ease both;
+}
+
+.streaming-entry {
+  animation: fadeIn 200ms ease both;
 }
 
 .message-row.user {
@@ -872,36 +882,54 @@ body {
 .typing-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: 8px;
+  padding: 14px 18px;
+  background: #f8f7f4;
 }
 
 .typing-indicator span {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
-  background: #c9c3bb;
-  animation: pulseDot 1.2s ease-in-out infinite;
+  background: var(--accent);
+  opacity: 0.5;
+  animation: pulseDot 1.4s ease-in-out infinite;
 }
 
 .typing-indicator span:nth-child(2) {
-  animation-delay: 0.15s;
+  animation-delay: 0.2s;
 }
 
 .typing-indicator span:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: 0.4s;
 }
 
 @keyframes pulseDot {
   0%,
+  80%,
   100% {
-    transform: translateY(0);
-    opacity: 0.6;
+    transform: scale(0.6);
+    opacity: 0.4;
   }
-  50% {
-    transform: translateY(-3px);
+  40% {
+    transform: scale(1);
     opacity: 1;
   }
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--accent);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blinkCursor 1s step-end infinite;
+}
+
+@keyframes blinkCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 @media (max-width: 1080px) {

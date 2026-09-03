@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { readStore, writeStore } = require('../utils/datastore');
+const { getHistoryCollection } = require('../utils/datastore');
 
 const MAX_HISTORY_ITEMS_PER_USER = 100;
 const IMAGE_DAILY_LIMIT = 4;
@@ -14,8 +14,8 @@ const dateToKey = (value) => {
 
 const getTodayKey = () => dateToKey(new Date());
 
-const addHistoryItem = ({ userId, type, prompt, responseText = '', imageUrl = '' }) => {
-    const store = readStore();
+const addHistoryItem = async ({ userId, type, prompt, responseText = '', imageUrl = '' }) => {
+    const history = await getHistoryCollection();
 
     const entry = {
         id: crypto.randomUUID(),
@@ -27,31 +27,44 @@ const addHistoryItem = ({ userId, type, prompt, responseText = '', imageUrl = ''
         createdAt: new Date().toISOString()
     };
 
-    store.history.unshift(entry);
+    await history.insertOne(entry);
 
-    const perUserHistory = store.history.filter((item) => item.userId === userId);
-    if (perUserHistory.length > MAX_HISTORY_ITEMS_PER_USER) {
-        const idsToKeep = new Set(perUserHistory.slice(0, MAX_HISTORY_ITEMS_PER_USER).map((item) => item.id));
-        store.history = store.history.filter((item) => item.userId !== userId || idsToKeep.has(item.id));
+    const count = await history.countDocuments({ userId });
+    if (count > MAX_HISTORY_ITEMS_PER_USER) {
+        const excess = await history.find({ userId })
+            .sort({ createdAt: -1 })
+            .skip(MAX_HISTORY_ITEMS_PER_USER)
+            .project({ _id: 1 })
+            .toArray();
+        if (excess.length > 0) {
+            await history.deleteMany({ _id: { $in: excess.map((e) => e._id) } });
+        }
     }
 
-    writeStore(store);
     return entry;
 };
 
-const getUserHistory = (userId) => {
-    const store = readStore();
-    return store.history
-        .filter((item) => item.userId === userId)
-        .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
+const getUserHistory = async (userId) => {
+    const history = await getHistoryCollection();
+    return await history
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .toArray();
 };
 
-const getDailyImageUsage = (userId) => {
+const getDailyImageUsage = async (userId) => {
     const today = getTodayKey();
-    const store = readStore();
-    const used = store.history.filter(
-        (item) => item.userId === userId && item.type === 'image' && dateToKey(item.createdAt) === today
-    ).length;
+    const history = await getHistoryCollection();
+    const used = await history.countDocuments({
+        userId,
+        type: 'image',
+        $expr: {
+            $eq: [
+                { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                today
+            ]
+        }
+    });
 
     return {
         date: today,

@@ -62,7 +62,7 @@ export const exportDocumentFile = async ({
 }) => {
   const response = await apiClient.post(
     '/export',
-    { content, format: format === 'docx' ? 'doc' : format, title, type },
+    { content, format, title, type },
     {
       headers: { Authorization: `Bearer ${token}` },
       responseType: 'blob'

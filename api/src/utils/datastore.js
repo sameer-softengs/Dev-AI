@@ -1,47 +1,36 @@
-const fs = require('fs');
-const path = require('path');
+const { MongoClient } = require('mongodb');
 
-const dataDir = path.resolve(__dirname, '../../data');
-const dataFile = path.join(dataDir, 'app-data.json');
+const MONGODB_URI = process.env.MONGODB_URI;
+const DB_NAME = 'devai';
 
-const defaultState = {
-    users: [],
-    history: []
-};
+let client = null;
+let db = null;
 
-const ensureStore = () => {
-    if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
+const connectDB = async () => {
+    if (db) return db;
+
+    if (!MONGODB_URI) {
+        throw new Error('MONGODB_URI is not set');
     }
 
-    if (!fs.existsSync(dataFile)) {
-        fs.writeFileSync(dataFile, JSON.stringify(defaultState, null, 2), 'utf8');
-    }
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db(DB_NAME);
+    return db;
 };
 
-const readStore = () => {
-    ensureStore();
-
-    try {
-        const raw = fs.readFileSync(dataFile, 'utf8');
-        const parsed = JSON.parse(raw);
-
-        return {
-            users: Array.isArray(parsed.users) ? parsed.users : [],
-            history: Array.isArray(parsed.history) ? parsed.history : []
-        };
-    } catch (error) {
-        fs.writeFileSync(dataFile, JSON.stringify(defaultState, null, 2), 'utf8');
-        return { ...defaultState };
-    }
+const getCollection = async (name) => {
+    const database = await connectDB();
+    return database.collection(name);
 };
 
-const writeStore = (state) => {
-    ensureStore();
-    fs.writeFileSync(dataFile, JSON.stringify(state, null, 2), 'utf8');
-};
+const getUsersCollection = async () => getCollection('users');
+const getHistoryCollection = async () => getCollection('history');
+const getResetTokensCollection = async () => getCollection('resetTokens');
 
 module.exports = {
-    readStore,
-    writeStore
+    connectDB,
+    getUsersCollection,
+    getHistoryCollection,
+    getResetTokensCollection
 };

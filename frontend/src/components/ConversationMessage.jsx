@@ -1,8 +1,9 @@
-import { Download, FileText, Image as ImageIcon, UserCircle2 } from 'lucide-react';
+import { Download, FileText, UserCircle2 } from 'lucide-react';
 import RichTextContent from './RichTextContent';
 
 function ConversationMessage({
   message,
+  isStreaming,
   onDownloadDocument,
   onDownloadImageJpg,
   onDownloadImagePdf
@@ -26,7 +27,12 @@ function ConversationMessage({
           </div>
         ) : null}
 
-        {message.type === 'text' ? <RichTextContent content={message.content} /> : null}
+        {message.type === 'text' ? (
+          <div className="rich-text">
+            <RichTextContent content={message.content} />
+            {isStreaming ? <span className="streaming-cursor" /> : null}
+          </div>
+        ) : null}
 
         {message.type === 'image' ? (
           <div className="message-asset">
@@ -58,7 +64,7 @@ function ConversationMessage({
             <RichTextContent content={message.content} />
             <div className="document-card">
               <div className="document-meta">
-                <ImageIcon size={16} />
+                <FileText size={16} />
                 <div>
                   <strong>{message.title}</strong>
                   <span>{message.format.toUpperCase()} ready to download</span>

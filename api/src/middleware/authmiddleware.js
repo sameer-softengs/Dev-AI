@@ -1,7 +1,7 @@
 const { verifyToken } = require('../services/authservice');
 const { findUserById, sanitizeUser } = require('../services/userservice');
 
-const requireAuth = (req, res, next) => {
+const requireAuth = async (req, res, next) => {
     const authHeader = req.headers.authorization || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
@@ -11,7 +11,7 @@ const requireAuth = (req, res, next) => {
 
     try {
         const payload = verifyToken(token);
-        const user = findUserById(payload.userId);
+        const user = await findUserById(payload.userId);
 
         if (!user) {
             return res.status(401).json({ success: false, error: 'Account not found.' });

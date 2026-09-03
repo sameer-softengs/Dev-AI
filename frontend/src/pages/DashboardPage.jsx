@@ -9,6 +9,7 @@ function DashboardPage({
   conversations,
   imageUsage,
   isSubmitting,
+  isStreaming,
   messageInput,
   onCreateConversation,
   onDeleteConversation,
@@ -19,6 +20,7 @@ function DashboardPage({
   onMessageInputChange,
   onSelectConversation,
   onSubmitMessage,
+  onStopStreaming,
   user
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -43,12 +45,14 @@ function DashboardPage({
           appError={appError}
           imageUsage={imageUsage}
           isSubmitting={isSubmitting}
+          isStreaming={isStreaming}
           prompt={messageInput}
           onDownloadDocument={onDownloadDocument}
           onDownloadImageJpg={onDownloadImageJpg}
           onDownloadImagePdf={onDownloadImagePdf}
           onPromptChange={onMessageInputChange}
           onSubmit={onSubmitMessage}
+          onStopStreaming={onStopStreaming}
         />
       </main>
     </div>

@@ -9,6 +9,15 @@ function ChatComposer({
   onSubmit,
   onStopStreaming
 }) {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      if (prompt.trim() && !isSubmitting && !isStreaming) {
+        onSubmit(event);
+      }
+    }
+  };
+
   return (
     <form className="chat-composer" onSubmit={onSubmit}>
       <div className="composer-meta">
@@ -19,6 +28,7 @@ function ChatComposer({
       <textarea
         value={prompt}
         onChange={(event) => onPromptChange(event.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder="Message the assistant. Ask for chat replies, image generation, or a PDF/document and it will respond in this same conversation."
         rows={4}
       />

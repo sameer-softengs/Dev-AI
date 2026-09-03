@@ -81,7 +81,10 @@ const handleChatStream = async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders?.();
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (typeof res.flushHeaders === 'function') {
+        res.flushHeaders();
+    }
 
     try {
         const stream = await generateChatStream({
@@ -89,6 +92,10 @@ const handleChatStream = async (req, res) => {
             systemInstruction: systemPrompt,
             messages: normalizedMessages,
             summary
+        });
+
+        req.on('close', () => {
+            stream.destroy();
         });
 
         let buffer = '';
@@ -130,11 +137,13 @@ const handleChatStream = async (req, res) => {
         });
 
         stream.on('error', (error) => {
+            console.error('Stream error:', error.message);
             res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
             res.end();
         });
     } catch (error) {
-        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        console.error('Chat stream setup error:', error.message);
+        res.write(`data: ${JSON.stringify({ error: error.message || 'Failed to get AI response.' })}\n\n`);
         res.end();
     }
 };

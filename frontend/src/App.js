@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { apiClient, API_BASE_URL } from './lib/api';
 import {
@@ -17,6 +17,13 @@ const emptyAuthForm = {
   name: '',
   email: '',
   password: ''
+};
+
+const emptyResetForm = {
+  email: '',
+  token: '',
+  newPassword: '',
+  confirmPassword: ''
 };
 
 const createId = () =>
@@ -135,14 +142,15 @@ const shouldUpdateSummary = (messages, summaryMeta) => {
   return messages.length - lastCount >= SUMMARY_UPDATE_STEP;
 };
 
-const streamChatCompletion = async ({ token, payload, onDelta }) => {
+const streamChatCompletion = async ({ token, payload, onDelta, signal }) => {
   const response = await fetch(`${API_BASE_URL}/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal
   });
 
   if (!response.ok) {
@@ -169,19 +177,19 @@ const streamChatCompletion = async ({ token, payload, onDelta }) => {
     const parts = buffer.split('\n\n');
     buffer = parts.pop() || '';
 
-    parts.forEach((part) => {
-      const line = part
+    for (let i = 0; i < parts.length; i += 1) {
+      const line = parts[i]
         .split('\n')
         .map((item) => item.trim())
         .find((item) => item.startsWith('data:'));
 
       if (!line) {
-        return;
+        continue;
       }
 
       const data = line.replace(/^data:\s*/, '');
       if (data === '[DONE]') {
-        return;
+        continue;
       }
 
       try {
@@ -196,7 +204,7 @@ const streamChatCompletion = async ({ token, payload, onDelta }) => {
       } catch (error) {
         // Ignore malformed chunks
       }
-    });
+    }
   }
 
   return fullText;
@@ -235,6 +243,9 @@ const detectIntentWithFallback = async ({ currentConversation, prompt, token }) 
 function App() {
   const [mode, setMode] = useState('login');
   const [authForm, setAuthForm] = useState(emptyAuthForm);
+  const [resetMode, setResetMode] = useState(''); // '', 'request', 'confirm'
+  const [resetForm, setResetForm] = useState(emptyResetForm);
+  const [resetMessage, setResetMessage] = useState('');
   const [token, setToken] = useState(
     () => localStorage.getItem('ai-platform-token') || ''
   );
@@ -247,6 +258,8 @@ function App() {
   const [appError, setAppError] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortRef = useRef(null);
 
   const activeConversation = useMemo(
     () =>
@@ -418,6 +431,67 @@ function App() {
     setAuthForm((current) => ({ ...current, [name]: value }));
   };
 
+  const handleResetInputChange = (event) => {
+    const { name, value } = event.target;
+    setResetForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleForgotPassword = async (event) => {
+    event.preventDefault();
+    setResetMessage('');
+    setIsAuthLoading(true);
+
+    try {
+      const response = await apiClient.post('/auth/forgot-password', {
+        email: resetForm.email
+      });
+      if (response.data.resetToken) {
+        setResetForm((current) => ({ ...current, token: response.data.resetToken }));
+        setResetMode('confirm');
+        setResetMessage('Reset token generated. Use it below to set a new password.');
+      } else {
+        setResetMessage(response.data.message || 'If an account exists, a reset link has been sent.');
+      }
+    } catch (error) {
+      setResetMessage(error.response?.data?.error || 'Failed to process request.');
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (event) => {
+    event.preventDefault();
+    setResetMessage('');
+    setIsAuthLoading(true);
+
+    if (resetForm.newPassword !== resetForm.confirmPassword) {
+      setResetMessage('Passwords do not match.');
+      setIsAuthLoading(false);
+      return;
+    }
+
+    if (resetForm.newPassword.length < 8) {
+      setResetMessage('Password must be at least 8 characters.');
+      setIsAuthLoading(false);
+      return;
+    }
+
+    try {
+      await apiClient.post('/auth/reset-password', {
+        token: resetForm.token,
+        newPassword: resetForm.newPassword
+      });
+      setResetMessage('Password reset successful! You can now login.');
+      setResetMode('');
+      setResetForm(emptyResetForm);
+      setMode('login');
+    } catch (error) {
+      setResetMessage(error.response?.data?.error || 'Failed to reset password.');
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
   const handleAuthSubmit = async (event) => {
     event.preventDefault();
     setAuthError('');
@@ -508,27 +582,49 @@ function App() {
       return nextMessages;
     });
 
-    const fullText = await streamChatCompletion({
-      token,
-      payload: {
-        messages: contextMessages,
-        summary: conversation?.summary || ''
-      },
-      onDelta: (content) => updateMessageContent(conversationId, assistantId, content)
-    });
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsStreaming(true);
 
-    updateMessageContent(conversationId, assistantId, fullText);
+    try {
+      const fullText = await streamChatCompletion({
+        token,
+        payload: {
+          messages: contextMessages,
+          summary: conversation?.summary || ''
+        },
+        onDelta: (content) => updateMessageContent(conversationId, assistantId, content),
+        signal: controller.signal
+      });
 
-    const finalizedMessages = nextMessages.map((message) =>
-      message.id === assistantId ? { ...message, content: fullText } : message
-    );
+      updateMessageContent(conversationId, assistantId, fullText);
 
-    await requestSummaryUpdate({
-      conversationId,
-      messages: finalizedMessages,
-      summary: conversation?.summary || '',
-      summaryMeta: conversation?.summaryMeta
-    });
+      const finalizedMessages = nextMessages.map((message) =>
+        message.id === assistantId ? { ...message, content: fullText } : message
+      );
+
+      await requestSummaryUpdate({
+        conversationId,
+        messages: finalizedMessages,
+        summary: conversation?.summary || '',
+        summaryMeta: conversation?.summaryMeta
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        // User stopped streaming — keep whatever content was received
+      } else {
+        throw error;
+      }
+    } finally {
+      abortRef.current = null;
+      setIsStreaming(false);
+    }
+  };
+
+  const handleStopStreaming = () => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
   };
 
   const sendImageMessage = async ({ conversationId, prompt, userMessage, conversation }) => {
@@ -621,7 +717,6 @@ function App() {
     }
 
     setAppError('');
-    setIsSubmitting(true);
     setMessageInput('');
 
     const conversationId = ensureConversation(prompt);
@@ -643,6 +738,8 @@ function App() {
         token
       });
       const intent = detection.intent || 'chat';
+
+      setIsSubmitting(true);
 
       if (intent === 'image') {
         await sendImageMessage({
@@ -713,6 +810,7 @@ function App() {
           conversations={conversations}
           imageUsage={imageUsage}
           isSubmitting={isSubmitting}
+          isStreaming={isStreaming}
           messageInput={messageInput}
           onCreateConversation={createNewConversation}
           onDeleteConversation={deleteConversation}
@@ -723,6 +821,7 @@ function App() {
           onMessageInputChange={setMessageInput}
           onSelectConversation={setActiveConversationId}
           onSubmitMessage={handleSubmitMessage}
+          onStopStreaming={handleStopStreaming}
           user={user}
         />
       ) : (
@@ -731,9 +830,16 @@ function App() {
           authForm={authForm}
           authError={authError}
           isAuthLoading={isAuthLoading}
+          resetMode={resetMode}
+          resetForm={resetForm}
+          resetMessage={resetMessage}
           onModeChange={setMode}
           onInputChange={handleAuthInputChange}
           onSubmit={handleAuthSubmit}
+          onResetModeChange={setResetMode}
+          onResetInputChange={handleResetInputChange}
+          onForgotPassword={handleForgotPassword}
+          onResetPassword={handleResetPassword}
         />
       )}
     </div>
