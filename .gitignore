@@ -1,6 +1,46 @@
+# Dependencies
 node_modules/
-.env
-*.log
-.DS_Store
-api/data/
+.pnp
+.pnp.js
+
+# Build outputs
 frontend/build/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+api/data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+
+# Docker
+docker-compose.override.yml
+
+# Vercel
+.vercel/
+
+# Testing
+coverage/

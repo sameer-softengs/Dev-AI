@@ -18,7 +18,7 @@ const validateAuthPayload = ({ name, email, password }, requireName = false) => 
     return null;
 };
 
-const register = (req, res) => {
+const register = async (req, res) => {
     const { name, email, password } = req.body;
     const validationError = validateAuthPayload({ name, email, password }, true);
 
@@ -27,7 +27,7 @@ const register = (req, res) => {
     }
 
     try {
-        const user = createUser({ name, email, password });
+        const user = await createUser({ name, email, password });
         const token = signToken({ userId: user.id, email: user.email });
         return res.status(201).json({ success: true, user, token });
     } catch (error) {
@@ -35,7 +35,7 @@ const register = (req, res) => {
     }
 };
 
-const login = (req, res) => {
+const login = async (req, res) => {
     const { email, password } = req.body;
     const validationError = validateAuthPayload({ email, password });
 
@@ -44,7 +44,7 @@ const login = (req, res) => {
     }
 
     try {
-        const user = authenticateUser({ email, password });
+        const user = await authenticateUser({ email, password });
         const token = signToken({ userId: user.id, email: user.email });
         return res.status(200).json({ success: true, user, token });
     } catch (error) {
@@ -56,7 +56,7 @@ const getCurrentUser = (req, res) => {
     res.status(200).json({ success: true, user: req.user });
 };
 
-const forgotPassword = (req, res) => {
+const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim().toLowerCase())) {
@@ -64,12 +64,12 @@ const forgotPassword = (req, res) => {
     }
 
     try {
-        const user = findUserByEmail(email);
+        const user = await findUserByEmail(email);
         if (!user) {
             return res.status(404).json({ success: false, error: 'No account found with this email.' });
         }
 
-        const result = createResetToken(email);
+        const result = await createResetToken(email);
         return res.status(200).json({
             success: true,
             message: 'Reset token generated successfully.',
@@ -80,7 +80,7 @@ const forgotPassword = (req, res) => {
     }
 };
 
-const resetPasswordHandler = (req, res) => {
+const resetPasswordHandler = async (req, res) => {
     const { token, newPassword } = req.body;
 
     if (!token || !String(token).trim()) {
@@ -92,7 +92,7 @@ const resetPasswordHandler = (req, res) => {
     }
 
     try {
-        const user = resetPassword(token, newPassword);
+        const user = await resetPassword(token, newPassword);
         return res.status(200).json({ success: true, message: 'Password has been reset successfully.', user });
     } catch (error) {
         return res.status(400).json({ success: false, error: error.message });

@@ -2,15 +2,11 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/build",
-  "framework": null,
+  "framework": "create-react-app",
   "rewrites": [
     {
       "source": "/api/(.*)",
       "destination": "/api/index.js"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/frontend/$1"
     }
   ]
 }

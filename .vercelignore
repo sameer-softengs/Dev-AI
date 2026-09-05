@@ -1,6 +1,14 @@
 node_modules/
+.git/
 api/data/
 api/.env
 api/*.log
 frontend/node_modules/
-.git/
+frontend/src/
+frontend/public/
+frontend/README.md
+coverage/
+.vercel/
+docker-compose*.yml
+Dockerfile
+.dockerignore

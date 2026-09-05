@@ -4,6 +4,7 @@ const { handleChatRequest, handleChatStream } = require('../controllers/chatcont
 const { handleImageRequest } = require('../controllers/imagecontroller');
 const { handleFileExport, handleImageExport } = require('../controllers/filecontroller');
 const { handleIntentDetection } = require('../controllers/intentcontroller');
+const { getHistory } = require('../controllers/historycontroller');
 const { register, login, getCurrentUser, forgotPassword, resetPasswordHandler } = require('../controllers/authcontroller');
 const { requireAuth } = require('../middleware/authmiddleware');
 
@@ -13,7 +14,7 @@ router.get('/auth/me', requireAuth, getCurrentUser);
 router.post('/auth/forgot-password', forgotPassword);
 router.post('/auth/reset-password', resetPasswordHandler);
 
-// URL: /api/ai/chat
+router.get('/history', requireAuth, getHistory);
 router.post('/detect-intent', requireAuth, handleIntentDetection);
 router.post('/chat', requireAuth, handleChatRequest);
 router.post('/chat/stream', requireAuth, handleChatStream);

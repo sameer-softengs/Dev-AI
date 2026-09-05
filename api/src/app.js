@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const aiRoutes = require('./routes/airoute');
 const { errorHandler } = require('./middleware/errorhandler');
@@ -12,9 +13,11 @@ app.use(express.json({ limit: '1mb' }));
 // Routes
 app.use('/api/ai', aiRoutes);
 
-// Simple Health Check for your browser
-app.get('/', (req, res) => {
-    res.send("Sameer's AI Platform Backend is Running! 🚀");
+// Serve frontend build (Docker)
+const frontendBuild = path.join(__dirname, '../../frontend/build');
+app.use(express.static(frontendBuild));
+app.get('/{*path}', (req, res) => {
+    res.sendFile(path.join(frontendBuild, 'index.html'));
 });
 
 // Error Handling Middleware
