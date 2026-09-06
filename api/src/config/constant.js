@@ -1,6 +1,3 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
-
 module.exports = {
     OPENROUTER_URL: "https://openrouter.ai/api/v1/chat/completions",
     OPENROUTER_KEY: process.env.OPENROUTER_KEY,

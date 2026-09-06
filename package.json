@@ -5,7 +5,6 @@
     "install:api": "cd api && npm install",
     "install:frontend": "cd frontend && npm install",
     "build:frontend": "cd frontend && npm run build",
-    "postinstall": "npm run install:api && npm run install:frontend",
     "build": "npm run build:frontend"
   }
 }

@@ -11,17 +11,15 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/ai', aiRoutes);
 
-app.get('/', (req, res) => {
-    res.json({ status: 'ok', service: 'Dev-AI API' });
-});
-
-const frontendBuild = path.join(__dirname, '../../frontend/build');
-const fs = require('fs');
-if (fs.existsSync(frontendBuild)) {
-    app.use(express.static(frontendBuild));
-    app.get('/{*path}', (req, res) => {
-        res.sendFile(path.join(frontendBuild, 'index.html'));
-    });
+if (!process.env.VERCEL) {
+    const fs = require('fs');
+    const frontendBuild = path.join(__dirname, '../../frontend/build');
+    if (fs.existsSync(frontendBuild)) {
+        app.use(express.static(frontendBuild));
+        app.get('/{*path}', (req, res) => {
+            res.sendFile(path.join(frontendBuild, 'index.html'));
+        });
+    }
 }
 
 app.use(errorHandler);
